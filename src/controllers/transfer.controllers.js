@@ -2,14 +2,19 @@ import Account from "../models/account.model.js";
 import Transfer from '../models/transfer.model.js'
 
 export const Transaction = async (req, res) => {
-  const { accountFromId, accountToId, amount } = req.body;
-
+  const { accountFromId, accountToId, amount, userFrom } = req.body;
+  console.log("req.body",req.body)
   try {
     const accountFrom = await Account.findById(accountFromId);
     const accountTo = await Account.findById(accountToId);
+    const accountCheckOwner = await Account.findOne({ _id: accountFromId, user: userFrom.id });
 
     if (!accountFrom || !accountTo) {
       return res.status(404).json({ message: ['Account not found'] });
+    }
+
+    if (!accountCheckOwner) {
+      return res.status(403).json({ message: ['The source account does not belong to the user.'] });
     }
 
     if (accountFrom.balance < amount) {

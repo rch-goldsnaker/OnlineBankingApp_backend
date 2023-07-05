@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { TOKEN_SECRET } from "../config.js";
 import { createAccessToken } from "../libs/jwt.js";
+import Account from "../models/account.model.js";
+import { randomInt } from "crypto";
 
 export const register = async (req, res) => {
   try {
@@ -32,6 +34,57 @@ export const register = async (req, res) => {
     const token = await createAccessToken({
       id: userSaved._id,
     });
+
+    const generateAccountNumber = async () => {
+      let accountNumber;
+      let isUnique = false;
+
+      while (!isUnique) {
+        accountNumber = randomInt(100, 999);
+
+        const existingAccount = await Account.findOne({ $or: [{ numberAccount: accountNumber }, { numberAccountInterbank: accountNumber }] });
+
+        if (!existingAccount) {
+          isUnique = true;
+        }
+      }
+
+      return accountNumber;
+    };
+
+    // Create a new account for the user
+    const newAccount1 = new Account({
+      type: "ahorros",
+      currency: "dolares",
+      balance: 100,
+      numberAccount: await generateAccountNumber(),
+      numberAccountInterbank: await generateAccountNumber(),
+      user: userSaved._id,
+    });
+
+    await newAccount1.save();
+
+    const newAccount2 = new Account({
+      type: "corriente",
+      currency: "dolares",
+      balance: 100,
+      numberAccount: await generateAccountNumber(),
+      numberAccountInterbank: await generateAccountNumber(),
+      user: userSaved._id,
+    });
+
+    await newAccount2.save();
+
+    const newAccount3 = new Account({
+      type: "nomina",
+      currency: "dolares",
+      balance: 100,
+      numberAccount: await generateAccountNumber(),
+      numberAccountInterbank: await generateAccountNumber(),
+      user: userSaved._id,
+    });
+
+    await newAccount3.save();
 
     res.cookie("token", token, {
       httpOnly: true,
